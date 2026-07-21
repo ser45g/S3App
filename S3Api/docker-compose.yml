@@ -1,0 +1,15 @@
+services:
+  s3api:
+    image: ${DOCKER_REGISTRY-}s3api
+    build:
+      context: .
+      dockerfile: S3Api/Dockerfile
+    ports:
+      - 8081:8081
+    environment:
+      S3Config__KeyId: ${YANDEX_CLOUD_OBJECT_STORAGE_KEY_ID}
+      S3Config__SecretKey: ${YANDEX_CLOUD_OBJECT_STORAGE_SECRET_KEY}
+      S3Config__Region: ru-central1
+      S3Config__BucketName: gg55ks0urmmt1aoy3zhdhql0a95y60ldcpczwzs4y3ws7ljkjr46jvzggbc0xcu
+      S3Config__ServiceUrl: https://s3.yandexcloud.net
+      
