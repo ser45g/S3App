@@ -15,6 +15,15 @@ builder.Services.AddOptions<S3Config>().Bind(builder.Configuration.GetSection("S
 var s3Config = builder.Configuration.GetSection("S3Config").Get<S3Config>();
 ArgumentNullException.ThrowIfNull(s3Config, nameof(s3Config));
 
+builder.Services.AddCors(options =>
+{
+    options.AddDefaultPolicy(config =>
+    {
+        config.WithOrigins("http://localhost:5173").AllowAnyHeader().AllowAnyMethod().AllowCredentials();
+    });
+});
+
+builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 
 builder.Services.AddSingleton<IAmazonS3>(sp =>
@@ -33,6 +42,8 @@ builder.Services.AddSingleton<IAmazonS3>(sp =>
 var app = builder.Build();
 
 app.UseHttpsRedirection();
+
+app.UseCors();
 
 if (app.Environment.IsDevelopment())
 {

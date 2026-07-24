@@ -1,5 +1,6 @@
 ﻿using Amazon.S3;
 using Amazon.S3.Model;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using S3Api.Models;
 using S3Api.Options;
@@ -31,8 +32,7 @@ namespace S3Api.Endpoints
                 return Results.Ok(new { key, uploadId = response.UploadId });
             });
 
-            group.MapPost("images/{key}/presigned-part", (string key, string uploadId, int partNumber, IAmazonS3 s3Client,
-                IOptions<S3Config> s3Settings) =>
+            group.MapPost("images/{key}/presigned-part", ([FromRoute] string key, [FromQuery] string uploadId,[FromQuery] int partNumber, IAmazonS3 s3Client, IOptions<S3Config> s3Settings) =>
             {
 
                 var request = new GetPreSignedUrlRequest
