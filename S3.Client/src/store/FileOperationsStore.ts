@@ -55,6 +55,7 @@ export default class FileOperationsStore {
       xhr.open("PUT", url, true);
       xhr.setRequestHeader("Content-Type", file.type);
       xhr.setRequestHeader("x-amz-meta-file-name", file.name);
+      
 
       xhr.upload.onprogress = (event) => {
         if (this.fileUploadState?.isAbortRequested) {
@@ -103,10 +104,10 @@ export default class FileOperationsStore {
     return await response.json();
   }
 
-  async getPresignedUrl(key: string) {
-    const response = await fetch(
-      `${API_BASE_URL}/file/images/${encodeURIComponent(key)}/presigned`,
-    );
+  async getPresignedUrl(key: string):Promise<string> {
+
+    const response = await fetch(`${API_BASE_URL}/file/images/${encodeURIComponent(key)}/presigned`);
+
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }

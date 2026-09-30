@@ -1,89 +1,177 @@
-import { useContext, useState } from "react";
+import { useContext, useState, type ReactNode } from "react";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
-import { StoreContext } from "@/main";
+import { StoreContext } from "@/App";
+import * as z from "zod";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "../ui/card";
+
+import { useForm, uuid } from "@tanstack/react-form";
+import {
+  Field,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+  FieldDescription,
+  FieldContent,
+} from "../ui/field";
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupButton,
+  InputGroupInput,
+} from "../ui/input-group";
+import { BotIcon, KeyIcon } from "lucide-react";
+
+const formSchema = z.object({
+  key: z
+    .string()
+    .min(5, "Key must be at least 5 characters.")
+    .max(150, "Key must be at most 150 characters."),
+});
 
 const GetFileByKeyComponent = () => {
-  const [key, setKey] = useState("");
-  const [error, setError] = useState("");
-
   const [url, setUrl] = useState("");
 
   const { store } = useContext(StoreContext);
 
-  const getFileByKeyFromS3 = async () => {
-    if(!key){
-      setError("Please enter a key")
-      return;
-    }
-    
-    clearFetchResults();
-
-
-    try {
-      const presignedUrl = await store.getPresignedUrl(key);
-      setUrl(presignedUrl);
-    } catch (error) {
-      setError("Could not get the specified file");
-    }
-  };
-
+  const form = useForm({
+    defaultValues: { key: "" },
+    validators: {
+      onChange: formSchema,
+      onSubmitAsync: async ({ value }) => {
+        try {
+          
+          const presignedUrl = await store.getPresignedUrl(value.key);
+          
+          setUrl(presignedUrl);
+        } catch (err) {
+          return "Couldn't get the presigned url.";
+        }
+      },
+    },
+    onSubmit: async ({ value }) => {
+      // This only runs if onSubmitAsync passes
+      console.log("Form submitted successfully", value);
+    },
+  });
   const clearFields = () => {
-    setKey("");
-    clearFetchResults();
-  };
-
-  const clearFetchResults = () => {
-    setError("");
+    form.reset();
     setUrl("");
   };
 
   return (
-    <div>
-      <h2 className="text-xl font-semibold mb-2">Get Pre-signed URL</h2>
-      <Input
-        type="text"
-        value={key}
-        onChange={(event) => setKey(event.currentTarget.value)}
-        id="objectKeyInput"
-        placeholder="Enter object key"
-        className="w-full px-3 py-2 border rounded-md mb-4"
-      />
-      <div className="flex space-x-2 mb-1">
-        <Button
-          id="getUrlButton"
-          className="bg-purple-500 hover:bg-purple-600 text-white font-bold py-2 px-4 rounded grow"
-          onClick={getFileByKeyFromS3}
+    <Card className="w-full">
+      <CardHeader>
+        <CardTitle>Get Pre-signed URL</CardTitle>
+        <CardDescription>
+          You can use that url to upload/download a file
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <form
+          id="bug-report-form"
+          onSubmit={(e) => {
+            e.preventDefault();
+            form.handleSubmit();
+          }}
         >
-          Get Pre-signed URL
-        </Button>
-        <Button
-          id="clearButton"
-          className="bg-teal-400 hover:bg-teal-600 text-white font-bold py-2 px-4 rounded"
-          onClick={clearFields}
-        >
-          Clear
-        </Button>
-        
-      </div>
+          <FieldGroup>
+            <form.Field
+              name="key"
+              children={(field) => {
+                const isInvalid =
+                  field.state.meta.isTouched && !field.state.meta.isValid;
+                return (
+                  <Field data-invalid={isInvalid}>
+                    <FieldLabel htmlFor={field.name}>
+                      Key
+                    </FieldLabel>
+                    <InputGroup>
+                      <InputGroupInput
+                        id={field.name}
+                        name={field.name}
+                        value={field.state.value}
+                        onBlur={field.handleBlur}
+                        onChange={(e) => field.handleChange(e.target.value)}
+                        aria-invalid={isInvalid}
+                        placeholder="67695cb3-ff40-450a-86a4-04f8204bc2a9"
+                        autoComplete="off"
+                      />
+                      <InputGroupAddon align="inline-end">
+                        <InputGroupButton
+                          type="button"
+                          title="Generate a random key"
+                          variant="secondary"
+                          onClick={() => form.setFieldValue("key", uuid())}
+                        >
+                          <BotIcon />
+                          Generate
+                        </InputGroupButton>
+                      </InputGroupAddon>
+                    </InputGroup>
 
-      {url !== null && (
-        <a
-          id="presignedUrlResult"
-          href={url}
-          target="_blank"
-          className="text-sm break-all text-blue-600 hover:text-blue-800 italic"
-        >
-          {url}
-        </a>
-      )}
+                    {isInvalid && (
+                      <FieldError errors={field.state.meta.errors} />
+                    )}
+                  </Field>
+                );
+              }}
+            />
+            <Field orientation="horizontal">
+              <form.Subscribe selector={(state) => !state.canSubmit}>
+                {(isDisabled) => (
+                  <Button
+                    type="submit"
+                    id="getUrlButton"
+                    disabled={isDisabled}
+                    aria-disabled={isDisabled}
+                    className="flex-1 bg-violet-300 text-violet-700"
+                  >
+                    Get Pre-signed URL
+                  </Button>
+                )}
+              </form.Subscribe>
 
-      {error !== null && (
-        <div id="error" className="text-sm break-all text-red-400 hover:text-red-600">
-          {error}
+              <Button
+                type="button"
+                id="clearButton"
+                variant="outline"
+                className=""
+                onClick={clearFields}
+              >
+                Clear
+              </Button>
+            </Field>
+          </FieldGroup>
+        </form>
+        <div className="mt-4 flex flex-col space-y-2 text-center">
+          <form.Subscribe selector={(state) => state.errorMap.onSubmit}>
+            {(error) => {
+              if (!error) return null;
+              const message = Array.isArray(error) ? error.join(", ") : error;
+              return <div className="text-destructive">{message}</div>;
+            }}
+          </form.Subscribe>
+          {url !== null && (
+            <a
+              id="presignedUrlResult"
+              href={url}
+              target="_blank"
+              className="text-sm break-all text-blue-500 hover:text-red-400 dark:hover:text-blue-400 dark:text-red-300 italic"
+            >
+              {url}
+            </a>
+          )}
         </div>
-      )}
-    </div>
+      </CardContent>
+    </Card>
   );
 };
 
