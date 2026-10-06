@@ -10,17 +10,10 @@ import {
 } from "../../ui/card";
 
 import { useForm } from "@tanstack/react-form";
-import {
-  Field,
-  FieldError,
-  FieldGroup,
-  FieldLabel,
-} from "../../ui/field";
-import {
-  InputGroup,
-  InputGroupInput,
-} from "../../ui/input-group";
+import { Field, FieldError, FieldGroup, FieldLabel } from "../../ui/field";
+import { InputGroup, InputGroupInput } from "../../ui/input-group";
 import { getPresignedUrlForDownload } from "@/api/services/file";
+import { toast } from "@/components/ui/toast";
 
 const formSchema = z.object({
   key: z
@@ -38,18 +31,24 @@ const DownloadingFile = () => {
       onChange: formSchema,
       onSubmitAsync: async ({ value }) => {
         try {
-          
-          const {url:presignedUrl} = await getPresignedUrlForDownload(value.key);
-          
+          const { url: presignedUrl } = await getPresignedUrlForDownload(
+            value.key,
+          );
+          const toastId = toast.add({
+            title: "Presigned url was recieved",
+            description: "Use it to download a file",
+            type: "success",
+          });
           setUrl(presignedUrl);
         } catch (err) {
+          const toastId = toast.add({
+            title: "Could get the presigned url",
+            description: "Something went wrong...",
+            type: "error",
+          });
           return "Couldn't get the presigned url.";
         }
       },
-    },
-    onSubmit: async ({ value }) => {
-      // This only runs if onSubmitAsync passes
-      console.log("Form submitted successfully", value);
     },
   });
   const clearFields = () => {
@@ -62,7 +61,8 @@ const DownloadingFile = () => {
       <CardHeader>
         <CardTitle>Get Pre-signed URL</CardTitle>
         <CardDescription>
-          You need to provide a key for a file. It'll return a url that you can use to download that file
+          You need to provide a key for a file. It'll return a url that you can
+          use to download that file
         </CardDescription>
       </CardHeader>
       <CardContent className="my-auto">
@@ -81,9 +81,7 @@ const DownloadingFile = () => {
                   field.state.meta.isTouched && !field.state.meta.isValid;
                 return (
                   <Field data-invalid={isInvalid}>
-                    <FieldLabel htmlFor={field.name}>
-                      Key
-                    </FieldLabel>
+                    <FieldLabel htmlFor={field.name}>Key</FieldLabel>
                     <InputGroup>
                       <InputGroupInput
                         id={field.name}
@@ -95,7 +93,6 @@ const DownloadingFile = () => {
                         placeholder="67695cb3-ff40-450a-86a4-04f8204bc2a9"
                         autoComplete="off"
                       />
-                     
                     </InputGroup>
 
                     {isInvalid && (

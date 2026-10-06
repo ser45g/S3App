@@ -15,17 +15,25 @@ import { InputGroup, InputGroupInput } from "../../ui/input-group";
 import { Progress } from "../../ui/progress";
 import { useFileUpload } from "./uploading-file.hooks";
 import { FileDropzone } from "@/components/ui/drag-and-drop-file";
+import { toast } from "@/components/ui/toast";
 
 const formSchema = z.object({
-  files: z.array(z.file().nonoptional("File can't be null").refine((f) => f.size <= 100 * 1024 * 1024, "Max 100MB")).length(1)
+  files: z
+    .array(
+      z
+        .file()
+        .nonoptional("File can't be null")
+        .refine((f) => f.size <= 100 * 1024 * 1024, "Max 100MB"),
+    )
+    .length(1),
   //.refine((f) => ["image/jpeg", "image/png"].includes(f.type), "Only JPEG/PNG")
 });
 
 const UploadingFile = () => {
-
   const formRef = useRef<HTMLFormElement>(null);
 
-  const { status, progress, error, key, upload, cancel, reset } = useFileUpload();
+  const { status, progress, error, key, upload, cancel, reset } =
+    useFileUpload();
 
   const isLoading = status === "uploading";
 
@@ -34,19 +42,27 @@ const UploadingFile = () => {
     validators: {
       onChange: formSchema,
       onSubmitAsync: async ({ value }) => {
-        try {
-          if (!value.files?.[0]) return "Value can't be empty";
+      if (!value.files?.[0]) return "Value can't be empty";
+      if (value.files.length > 1) return "You can upload only one file at the time";
 
-          if(value.files.length > 1) return "You can upload only one file at the time";
-          console.log("got hereld")
-
-          await upload(value.files[0]);
-        } 
-        catch (error) 
-        {
-          return "Could not upload the file";
-        }
-      },
+      try {
+        await upload(value.files[0]);
+        // success toast here — upload is done
+        toast.add({
+          title: "The file was uploaded successfully!",
+          description: "You can now access it using the returned key",
+          type: "success",
+        });
+        return undefined; // validation passed
+      } catch (error) {
+        toast.add({
+          title: "Could not upload the file",
+          description: "Something went wrong...",
+          type: "error",
+        });
+        return "Could not upload the file"; // validation failed
+      }
+    },
     },
   });
 
@@ -81,10 +97,16 @@ const UploadingFile = () => {
                   field.state.meta.isTouched && !field.state.meta.isValid;
                 return (
                   <Field data-invalid={isInvalid}>
-                    <div><FileDropzone field={field} maxSize={100*1024*1024} maxFiles={0} multiple={true} isInvalid ={isInvalid}  />
-                      </div>                    
-                    
-                   
+                    <div>
+                      <FileDropzone
+                        field={field}
+                        maxSize={100 * 1024 * 1024}
+                        maxFiles={0}
+                        multiple={true}
+                        isInvalid={isInvalid}
+                      />
+                    </div>
+
                     {isInvalid && (
                       <FieldError errors={field.state.meta.errors} />
                     )}
@@ -125,37 +147,28 @@ const UploadingFile = () => {
             {(error) => {
               if (!error) return null;
               const message = Array.isArray(error) ? error.join(", ") : error;
-              
+
               return <div className="text-destructive">{message}</div>;
             }}
           </form.Subscribe>
           {isLoading && (
-              <div className="mb-4">
-                <FieldGroup>
-                  <Field className="w-full">
-                    <FieldLabel htmlFor="progress-upload">
-                      <span>Upload progress</span>
-                      <span className="ml-auto">
-                        {progress}%
-                      </span>
-                    </FieldLabel>
-                    <Progress
-                      value={progress}
-                      className="bg-green-100"
-                    />
-                  </Field>
-                  <Field>
-                    <Button 
-                    variant="destructive"
-                      className=""
-                      onClick={cancel}
-                    >
-                      Stop
-                    </Button>
-                  </Field>
-                </FieldGroup>
-              </div>
-            )}
+            <div className="mb-4">
+              <FieldGroup>
+                <Field className="w-full">
+                  <FieldLabel htmlFor="progress-upload">
+                    <span>Upload progress</span>
+                    <span className="ml-auto">{progress}%</span>
+                  </FieldLabel>
+                  <Progress value={progress} className="bg-green-100" />
+                </Field>
+                <Field>
+                  <Button variant="destructive" className="" onClick={cancel}>
+                    Stop
+                  </Button>
+                </Field>
+              </FieldGroup>
+            </div>
+          )}
         </div>
         {key && (
           <div className="mb-4">

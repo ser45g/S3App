@@ -18,23 +18,30 @@ import { Field, FieldError, FieldGroup, FieldLabel } from "../../ui/field";
 import { Progress } from "../../ui/progress";
 import { useMultipartUpload } from "./uploading-file-multipart.hooks";
 import { FileDropzone } from "@/components/ui/drag-and-drop-file";
+import { toast } from "@/components/ui/toast";
 
 const formSchema = z.object({
-  files: z.array(z.file().nonoptional("File can't be null")
-    .refine((f) => f.size <= 10 * 1024 * 1024 * 1024, "Max 10GB")).length(1)
-    
+  files: z
+    .array(
+      z
+        .file()
+        .nonoptional("File can't be null")
+        .refine((f) => f.size <= 10 * 1024 * 1024 * 1024, "Max 10GB"),
+    )
+    .length(1),
+
   //.refine((f) => ["image/jpeg", "image/png"].includes(f.type), "Only JPEG/PNG")
 });
 
 const UploadingFileMultipart = () => {
-  const { status, progress, error, key, upload, pause, resume, cancel, reset} = useMultipartUpload({ partSize: 5 * 1024 * 1024, concurrency: 3 });
+  const { status, progress, error, key, upload, pause, resume, cancel, reset } =
+    useMultipartUpload({ partSize: 5 * 1024 * 1024, concurrency: 3 });
 
   const formRef = useRef<HTMLFormElement>(null);
 
-  const isLoading = status === 'uploading';
-  const isPaused = status === 'paused';
-  const isIdle = status === 'idle';
-
+  const isLoading = status === "uploading";
+  const isPaused = status === "paused";
+  const isIdle = status === "idle";
 
   const form = useForm({
     defaultValues: { files: null as File[] | null },
@@ -44,14 +51,26 @@ const UploadingFileMultipart = () => {
         try {
           if (!value.files?.[0]) return "Value can't be empty";
 
-          if(value.files.length>1) return "You can upload only one file at the time";
+          if (value.files.length > 1)
+            return "You can upload only one file at the time";
 
           await upload(value.files[0]);
+          toast.add({
+            title: "The file was uploaded successfully!",
+            description: "You can now access it using the returned key",
+            type: "success",
+          });
+          return undefined;
         } catch (error) {
+          toast.add({
+            title: "Could not upload the file",
+            description: "Something went wrong...",
+            type: "error",
+          });
           return "Could not upload the file.";
         }
       },
-    }
+    },
   });
 
   const clearFields = () => {
@@ -60,13 +79,14 @@ const UploadingFileMultipart = () => {
     reset();
   };
 
-
   return (
     <Card className="w-full h-full">
       <CardHeader>
         <CardTitle>Multipart Upload</CardTitle>
         <CardDescription>
-          You can upload a big file to a S3 cloud using a multipart upload where a file is divided into multiple parts where each of them is uploaded separately. You can access it later by a key
+          You can upload a big file to a S3 cloud using a multipart upload where
+          a file is divided into multiple parts where each of them is uploaded
+          separately. You can access it later by a key
         </CardDescription>
       </CardHeader>
       <CardContent className="my-auto">
@@ -82,13 +102,19 @@ const UploadingFileMultipart = () => {
             <form.Field
               name="files"
               children={(field) => {
-                const isInvalid = field.state.meta.isTouched && !field.state.meta.isValid;
+                const isInvalid =
+                  field.state.meta.isTouched && !field.state.meta.isValid;
                 return (
                   <Field data-invalid={isInvalid}>
-                    
                     <div>
-                      <FileDropzone field={field} maxSize={5*1024*1024*1024} maxFiles={0} multiple={true} isInvalid ={isInvalid}  />
-                    </div>  
+                      <FileDropzone
+                        field={field}
+                        maxSize={5 * 1024 * 1024 * 1024}
+                        maxFiles={0}
+                        multiple={true}
+                        isInvalid={isInvalid}
+                      />
+                    </div>
 
                     {isInvalid && (
                       <FieldError errors={field.state.meta.errors} />
@@ -136,26 +162,21 @@ const UploadingFileMultipart = () => {
           {isLoading && (
             <div className=" mb-4">
               <Field className="w-full">
-                    <FieldLabel htmlFor="progress-upload">
-                      <span>Upload progress</span>
-                      <span className="ml-auto">
-                        {progress}%
-                      </span>
-                    </FieldLabel>
-                    <Progress
-                      value={progress}
-                      className="bg-green-100"
-                    />
-                  </Field>
+                <FieldLabel htmlFor="progress-upload">
+                  <span>Upload progress</span>
+                  <span className="ml-auto">{progress}%</span>
+                </FieldLabel>
+                <Progress value={progress} className="bg-green-100" />
+              </Field>
             </div>
           )}
 
-          {(isLoading || isPaused)  && (
+          {(isLoading || isPaused) && (
             <Button
               id="pauseResumeButton"
               variant={isPaused ? "destructive" : "secondary"}
               className=" "
-              onClick={isPaused? resume: pause}
+              onClick={isPaused ? resume : pause}
             >
               {isPaused ? "Resume" : "Pause"}
             </Button>
