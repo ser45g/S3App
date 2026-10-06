@@ -13,7 +13,7 @@ import {
   SidebarRail,
 } from "@/components/ui/sidebar";
 import { Link, useLocation } from "react-router-dom";
-import { Button } from "./ui/button";
+import { Button } from "./button";
 import {
   AtSignIcon,
   FileDownIcon,

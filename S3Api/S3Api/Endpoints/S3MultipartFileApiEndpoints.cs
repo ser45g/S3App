@@ -29,6 +29,8 @@ namespace S3Api.Endpoints
 
                 var response = await s3Client.InitiateMultipartUploadAsync(request);
 
+                
+
                 return Results.Ok(new { key, uploadId = response.UploadId });
             });
 
@@ -51,6 +53,8 @@ namespace S3Api.Endpoints
 
             });
 
+           
+
             group.MapPost("images/{key}/complete-multipart", async (string key, CompleteMultipartUpload complete, IAmazonS3 s3Client, IOptions<S3Config> s3Settings) =>
             {
                 var request = new CompleteMultipartUploadRequest
@@ -63,7 +67,21 @@ namespace S3Api.Endpoints
 
                 var response = await s3Client.CompleteMultipartUploadAsync(request);
 
-                return Results.Ok(new { key, location = response.Location });
+                return Results.Ok(new { key, url = response.Location });
+            });
+
+            group.MapDelete("images/{key}/abort-multipart", async (string key, string uploadId, IAmazonS3 s3Client, IOptions<S3Config> s3Settings) =>
+            {
+                var request = new AbortMultipartUploadRequest
+                {
+                    BucketName = s3Settings.Value.BucketName,
+                    Key = $"images/{key}",
+                    UploadId = uploadId, 
+                };
+
+                var response = await s3Client.AbortMultipartUploadAsync(request);
+
+                return Results.NoContent();
             });
 
             return app;

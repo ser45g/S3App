@@ -1,33 +1,26 @@
-import { useContext, useState, type ReactNode } from "react";
-import { Button } from "../ui/button";
-import { Input } from "../ui/input";
-import { StoreContext } from "@/App";
+import { useState } from "react";
+import { Button } from "../../ui/button";
 import * as z from "zod";
 import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
-} from "../ui/card";
+} from "../../ui/card";
 
-import { useForm, uuid } from "@tanstack/react-form";
+import { useForm } from "@tanstack/react-form";
 import {
   Field,
   FieldError,
   FieldGroup,
   FieldLabel,
-  FieldDescription,
-  FieldContent,
-} from "../ui/field";
+} from "../../ui/field";
 import {
   InputGroup,
-  InputGroupAddon,
-  InputGroupButton,
   InputGroupInput,
-} from "../ui/input-group";
-import { BotIcon, KeyIcon } from "lucide-react";
+} from "../../ui/input-group";
+import { getPresignedUrlForDownload } from "@/api/services/file";
 
 const formSchema = z.object({
   key: z
@@ -36,10 +29,8 @@ const formSchema = z.object({
     .max(150, "Key must be at most 150 characters."),
 });
 
-const GetFileByKeyComponent = () => {
+const DownloadingFile = () => {
   const [url, setUrl] = useState("");
-
-  const { store } = useContext(StoreContext);
 
   const form = useForm({
     defaultValues: { key: "" },
@@ -48,7 +39,7 @@ const GetFileByKeyComponent = () => {
       onSubmitAsync: async ({ value }) => {
         try {
           
-          const presignedUrl = await store.getPresignedUrl(value.key);
+          const {url:presignedUrl} = await getPresignedUrlForDownload(value.key);
           
           setUrl(presignedUrl);
         } catch (err) {
@@ -67,16 +58,16 @@ const GetFileByKeyComponent = () => {
   };
 
   return (
-    <Card className="w-full">
+    <Card className="w-full h-full">
       <CardHeader>
         <CardTitle>Get Pre-signed URL</CardTitle>
         <CardDescription>
-          You can use that url to upload/download a file
+          You need to provide a key for a file. It'll return a url that you can use to download that file
         </CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="my-auto">
         <form
-          id="bug-report-form"
+          id="get-file-form"
           onSubmit={(e) => {
             e.preventDefault();
             form.handleSubmit();
@@ -104,17 +95,7 @@ const GetFileByKeyComponent = () => {
                         placeholder="67695cb3-ff40-450a-86a4-04f8204bc2a9"
                         autoComplete="off"
                       />
-                      <InputGroupAddon align="inline-end">
-                        <InputGroupButton
-                          type="button"
-                          title="Generate a random key"
-                          variant="secondary"
-                          onClick={() => form.setFieldValue("key", uuid())}
-                        >
-                          <BotIcon />
-                          Generate
-                        </InputGroupButton>
-                      </InputGroupAddon>
+                     
                     </InputGroup>
 
                     {isInvalid && (
@@ -175,4 +156,4 @@ const GetFileByKeyComponent = () => {
   );
 };
 
-export default GetFileByKeyComponent;
+export default DownloadingFile;
